@@ -1,11 +1,12 @@
 import scrapy
 
+
 class QuotesSpider(scrapy.Spider):
     name = "wiki"
-    maxCount = 5
+    maxCount = 2
     historyHeadings = []
     historyUrls = []
-    currentUrl = 'https://en.wikipedia.org/wiki/Athletics_at_the_2000_Summer_Olympics_%E2%80%93_Men%27s_20_kilometres_walk'
+    currentUrl = 'https://en.wikipedia.org/wiki/World_War_II'
     goalUrl = 'https://en.wikipedia.org/wiki/Adolf_Hitler'
     blacklist = [
         'https://en.wikipedia.org/wiki/Portal:Contents',
@@ -15,19 +16,23 @@ class QuotesSpider(scrapy.Spider):
         'https://donate.wikimedia.org/wiki/Special:FundraiserRedirector?utm_source=donate&utm_medium=sidebar&utm_campaign=C13_en.wikipedia.org&uselang=en',
         'https://en.wikipedia.org/wiki/Wikipedia:Contact_us'
     ]
+
     def start_requests(self):
         urls = [
-            'https://en.wikipedia.org/wiki/Athletics_at_the_2000_Summer_Olympics_%E2%80%93_Men%27s_20_kilometres_walk',
+            'https://en.wikipedia.org/wiki/World_War_II',
         ]
         for url in urls:
             yield scrapy.Request(url=url, callback=self.parse)
 
     def parse(self, response):  # Recursive pathfinder
+
+        self.currentUrl = response.url
         print('''
         
         
         ''')
         print('Currently at ' + self.currentUrl)
+        print(response.url)
         print()
         print('History: ')
         print(self.historyUrls)
@@ -42,7 +47,7 @@ class QuotesSpider(scrapy.Spider):
             del self.historyHeadings[-1]
             del self.historyUrls[-1]
 
-        # Update tracking, then end recursive branch.
+        # Update tracking, then (supposedly) ends recursive branch and goes back to previous page.
         elif len(self.historyUrls) == self.maxCount:
             del self.historyHeadings[-1]
             del self.historyUrls[-1]
@@ -58,8 +63,9 @@ class QuotesSpider(scrapy.Spider):
             for a in response.css('a').xpath('@href').extract():
                 if a is not None:
                     a = response.urljoin(a)
+                    print('Cheking ' + a)
                     if self.currentUrl not in a:
                         if a not in self.blacklist:
                             if 'en.wikipedia.org' in a:
-                                self.currentUrl = a
                                 yield response.follow(a, callback=self.parse)
+
